@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050b18">
+<title>JARVIS AI — Assistente de voz</title>
+<style>
+:root{--bg:#050b18;--text:#eafaff;--blue:#36c8ff;--cyan:#8beaff;--muted:#8aa6bd;--line:#153a56;--btn:#0c2540;--input:#061020;--msg-j:#102941;--msg-y:#0d5273;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#050b18;--text:#eafaff}}
+:root[data-theme="dark"]{--bg:#050b18;--text:#eafaff}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg) radial-gradient(circle at 50% 20%,#10294a 0,#071326 38%,#030711 78%) no-repeat;color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+main{width:min(760px,100%);margin:auto;padding:22px 16px 32px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{font-size:1.15rem;letter-spacing:.18em;font-weight:800;color:var(--cyan)}
+.status{font-size:.75rem;color:#b6d9e8;border:1px solid #164568;border-radius:99px;padding:7px 10px}
+.status:before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#48e6a8;margin-right:7px;box-shadow:0 0 9px #48e6a8}
+.status.busy:before{background:#ffd166;box-shadow:0 0 9px #ffd166}
+.hero{text-align:center;padding:22px 0 18px}
+.orb{width:200px;height:200px;margin:4px auto 18px;border-radius:50%;display:grid;place-items:center;position:relative;background:radial-gradient(circle,#103e60 0,#09203a 42%,#071326 65%);border:1px solid #1b789f;box-shadow:0 0 25px #168bc355,inset 0 0 30px #20c8ff22;transition:transform .2s}
+.orb:before,.orb:after{content:"";position:absolute;border-radius:50%;inset:10px;border:2px solid transparent;border-top-color:var(--blue);border-bottom-color:#1685b8;animation:spin 7s linear infinite}
+.orb:after{inset:23px;border-width:1px;border-left-color:#78e9ff;border-right-color:#1e75a9;animation-direction:reverse;animation-duration:5s}
+.orb-core{width:100px;height:100px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,#7be8ff 0,#1686ba 18%,#0b3356 54%,#061426 75%);box-shadow:0 0 28px #28c8ff99,inset 0 0 20px #8cefff77;z-index:1}
+.orb-core span{font-size:2rem;font-weight:900;color:#e9fcff;text-shadow:0 0 12px #9ef4ff}
+.orb.listening{animation:pulse 1.2s ease-in-out infinite}
+.orb.thinking:before{animation-duration:1.2s}.orb.thinking:after{animation-duration:.9s}
+.orb.speaking{animation:talk .5s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{50%{box-shadow:0 0 42px #30d5ffbb,inset 0 0 35px #8cefff55}}
+@keyframes talk{50%{transform:scale(1.04);box-shadow:0 0 40px #30d5ffaa,inset 0 0 30px #8cefff44}}
+h1{font-size:1.45rem;margin:0 0 6px;letter-spacing:.12em}
+.subtitle{color:var(--muted);font-size:.92rem;margin:0}
+.warn{margin:12px auto 0;max-width:520px;font-size:.8rem;line-height:1.45;color:#ffd9a0;background:#2a1d08;border:1px solid #6b4a14;border-radius:12px;padding:9px 12px;text-align:left;display:none}
+.warn.show{display:block}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 0}
+.controls.small button{padding:10px;font-size:.85rem;font-weight:600}
+button{border:1px solid #28749b;border-radius:14px;padding:14px 12px;background:var(--btn);color:#effcff;font-size:1rem;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:inherit}
+button:active{transform:scale(.985)}
+button.primary{background:linear-gradient(135deg,#1c9dcc,#12608d);border-color:#6be6ff;color:#fff;box-shadow:0 5px 22px #0c9ad833}
+button.on{background:linear-gradient(135deg,#17a37a,#0f6b52);border-color:#48e6a8}
+.card{background:linear-gradient(150deg,#0b1b31ee,#071224ee);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:13px}
+.card h2{font-size:.95rem;letter-spacing:.06em;color:var(--cyan);margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.card h2 button{font-size:.72rem;padding:6px 10px;border-radius:99px;font-weight:600}
+#transcript{min-height:24px;color:#d8f4ff;overflow-wrap:anywhere}
+.inputrow{display:flex;gap:8px}
+.inputrow+.inputrow{margin-top:8px}
+input{min-width:0;flex:1;border:1px solid #24516d;background:var(--input);border-radius:12px;padding:13px;color:white;font-size:1rem;outline:none}
+input:focus{border-color:var(--blue)}
+.inputrow button{padding:12px 15px}
+#chat{display:flex;flex-direction:column;gap:10px;max-height:340px;overflow:auto}
+.msg{padding:10px 12px;border-radius:13px;max-width:92%;line-height:1.4;overflow-wrap:anywhere;white-space:pre-wrap}
+.msg.jarvis{align-self:flex-start;background:var(--msg-j);border:1px solid #1b4965}
+.msg.you{align-self:flex-end;background:var(--msg-y);border:1px solid #2489b2}
+.msg.pending{opacity:.7}
+.msg .openbtn{display:block;margin-top:8px;padding:9px 12px;font-size:.9rem;border-radius:10px;background:linear-gradient(135deg,#1c9dcc,#12608d);border-color:#6be6ff;color:#fff}
+.small{font-size:.8rem;color:var(--muted);line-height:1.5}
+.examples{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid #1d4a67;border-radius:99px;padding:8px 10px;background:#09182a;color:#bdeeff;font-size:.82rem;font-weight:600}
+.chip.custom{border-color:#48e6a8;color:#bdf5de}
+#timers{margin-top:8px;font-size:.85rem;color:#ffd166}
+footer{text-align:center;color:#63849b;font-size:.75rem;padding-top:18px}
+@media(max-width:390px){.orb{width:180px;height:180px}.orb-core{width:90px;height:90px}.controls{gap:8px}button{font-size:.9rem}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="brand">JARVIS <span style="color:#fff">AI</span></div>
+  <div class="status" id="status">SISTEMA PRONTO</div>
+</header>
+
+<section class="hero">
+  <div class="orb" id="orb"><div class="orb-core"><span>J</span></div></div>
+  <h1>ASSISTENTE PESSOAL</h1>
+  <p class="subtitle" id="hint">Toque no microfone e fale, ou digite abaixo.</p>
+  <div class="warn" id="warn"></div>
+  <div class="controls">
+    <button class="primary" id="micBtn">🎙️ FALAR COM JARVIS</button>
+    <button id="convBtn">💬 MODO CONVERSA: OFF</button>
+    <button id="repeatBtn">🔊 REPETIR</button>
+    <button id="stopBtn">🔇 CALAR</button>
+  </div>
+  <div class="controls small">
+    <button id="testVoiceBtn">🧪 TESTAR VOZ</button>
+    <button id="testMicBtn">🧪 TESTAR MICROFONE</button>
+  </div>
+  <div id="timers"></div>
+</section>
+
+<section class="card"><h2>O QUE EU ESCUTEI</h2><div id="transcript">Aguardando seu comando…</div></section>
+
+<section class="card">
+  <h2>CONVERSAR POR TEXTO</h2>
+  <form id="chatForm" class="inputrow">
+    <input id="textInput" autocomplete="off" placeholder="Digite ou diga: abrir WhatsApp" aria-label="Digite uma mensagem">
+    <button class="primary" type="submit">Enviar</button>
+  </form>
+  <p class="small">Perguntas gerais vão para a IA. Comandos como hora, timer, conta e abrir apps funcionam na hora.</p>
+</section>
+
+<section class="card">
+  <h2>CONVERSA <button id="clearBtn">Limpar</button></h2>
+  <div id="chat" aria-live="polite"></div>
+</section>
+
+<section class="card">
+  <h2>ENSINAR UM APP</h2>
+  <form id="addForm">
+    <div class="inputrow"><input id="addName" autocomplete="off" placeholder="Nome (ex: Banco Inter)" aria-label="Nome do app"></div>
+    <div class="inputrow"><input id="addTarget" autocomplete="off" placeholder="Pacote (br.com.intermedium) ou link" aria-label="Pacote ou link"><button class="primary" type="submit">Salvar</button></div>
+  </form>
+  <p class="small">Depois é só dizer "abrir Banco Inter". No Android o pacote aparece na página do app na Play Store, no final do link (id=...).</p>
+  <div class="examples" id="customList" style="margin-top:10px"></div>
+</section>
+
+<section class="card">
+  <h2>EXPERIMENTE</h2>
+  <div class="examples">
+    <button class="chip" data-command="Abrir WhatsApp">Abrir WhatsApp</button>
+    <button class="chip" data-command="Abrir Instagram">Abrir Instagram</button>
+    <button class="chip" data-command="Abrir câmera">Abrir câmera</button>
+    <button class="chip" data-command="Que horas são?">Que horas são?</button>
+    <button class="chip" data-command="Timer de 1 minuto">Timer de 1 minuto</button>
+    <button class="chip" data-command="Quanto é 15 vezes 12?">15 vezes 12</button>
+    <button class="chip" data-command="Pesquisar Free Fire">Pesquisar Free Fire</button>
+    <button class="chip" data-command="Me conte uma curiosidade sobre o espaço">Curiosidade</button>
+    <button class="chip" data-command="Quais apps você abre?">Quais apps?</button>
+  </div>
+</section>
+
+<footer>JARVIS AI • Protótipo pessoal • Não é um produto oficial da Marvel</footer>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const status = $('status'), hint = $('hint'), orb = $('orb'), transcript = $('transcript'),
+        chat = $('chat'), micBtn = $('micBtn'), convBtn = $('convBtn'), timersEl = $('timers'), warn = $('warn');
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  let inFrame = false; try { inFrame = window.self !== window.top; } catch (e) { inFrame = true; }
+
+  let recognition = null, isListening = false, convMode = false, busy = false;
+  let lastReply = 'Olá! Sou o JARVIS. Como posso ajudar?';
+  let history = [], userName = '', customApps = [];
+  let sampleFn = undefined;
+  const timers = [];
+
+  /* ---------- armazenamento ---------- */
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  };
+  userName = store.get('jarvis_name') || '';
+  try { history = JSON.parse(store.get('jarvis_history') || '[]'); } catch (e) { history = []; }
+  if (!Array.isArray(history)) history = [];
+  try { customApps = JSON.parse(store.get('jarvis_apps') || '[]'); } catch (e) { customApps = []; }
+  if (!Array.isArray(customApps)) customApps = [];
+  const saveHistory = () => store.set('jarvis_history', JSON.stringify(history.slice(-30)));
+
+  /* ---------- avisos ---------- */
+  function showWarn(msg) { warn.textContent = msg; warn.classList.add('show'); }
+  if (inFrame) showWarn('Dica: dentro do app do Claude o navegador costuma bloquear microfone e voz. Se não funcionar, toque em ⋮ e abra este link no Chrome. Use "Testar voz" e "Testar microfone" para ver o motivo.');
+  if (!SR) showWarn('Este navegador não tem reconhecimento de voz. Abra no Chrome (Android) ou Safari (iPhone), ou digite os comandos.');
+
+  /* ---------- UI ---------- */
+  function setState(label, cls) {
+    status.textContent = label;
+    status.classList.toggle('busy', cls === 'busy');
+    orb.classList.remove('listening', 'thinking', 'speaking');
+    if (cls === 'busy') orb.classList.add('thinking');
+    else if (cls) orb.classList.add(cls);
+  }
+  function idle() { isListening ? setState('ESTOU ESCUTANDO', 'listening') : setState('SISTEMA PRONTO', ''); }
+
+  function addMessage(text, who, opts = {}) {
+    const item = document.createElement('div');
+    item.className = 'msg ' + who + (opts.pending ? ' pending' : '');
+    item.textContent = text;
+    if (opts.action) {
+      const b = document.createElement('button');
+      b.className = 'openbtn'; b.textContent = opts.action.label;
+      b.addEventListener('click', () => go(opts.action.url));
+      item.appendChild(b);
+    }
+    chat.appendChild(item);
+    chat.scrollTop = chat.scrollHeight;
+    if (!opts.skipHistory) { history.push({ who, text }); saveHistory(); }
+    return item;
+  }
+
+  /* ---------- voz (síntese) ---------- */
+  let ptVoice = null, unlocked = false;
+  function pickVoice() {
+    if (!synth) return;
+    const vs = synth.getVoices();
+    ptVoice = vs.find(v => /pt[-_]BR/i.test(v.lang) && /google|luciana|francisca|microsoft/i.test(v.name))
+           || vs.find(v => /pt[-_]BR/i.test(v.lang)) || vs.find(v => /^pt/i.test(v.lang)) || null;
+  }
+  if (synth) { pickVoice(); synth.onvoiceschanged = pickVoice; }
+
+  // celulares só liberam o áudio depois de um toque do usuário
+  function unlockAudio() {
+    if (unlocked) return; unlocked = true;
+    if (synth) { try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; synth.speak(u); } catch (e) {} }
+  }
+  ['pointerdown', 'touchstart', 'keydown'].forEach(ev => document.addEventListener(ev, unlockAudio, { once: true, passive: true }));
+
+  const cleanForSpeech = t => t.replace(/[*_#`>~]/g, '').replace(/https?:\/\/\S+/g, 'link').replace(/\s+/g, ' ').trim();
+
+  function speak(text) {
+    lastReply = text;
+    return new Promise(resolve => {
+      if (!synth) { setState('VOZ NÃO SUPORTADA', ''); resolve(); return; }
+      let finished = false, started = false;
+      const done = () => { if (finished) return; finished = true; clearTimeout(wd); idle(); resolve(); };
+      try { synth.cancel(); } catch (e) {}
+      const u = new SpeechSynthesisUtterance(cleanForSpeech(text).slice(0, 700));
+      u.lang = 'pt-BR'; u.rate = 1.02; u.pitch = .92; u.volume = 1;
+      if (ptVoice) u.voice = ptVoice;
+      u.onstart = () => { started = true; setState('JARVIS FALANDO', 'speaking'); };
+      u.onend = done;
+      u.onerror = e => {
+        if (e && (e.error === 'canceled' || e.error === 'interrupted')) { done(); return; }
+        showWarn('A voz falhou (' + ((e && e.error) || 'erro') + '). O texto aparece na tela. Toque em "Testar voz" ou abra no Chrome.');
+        done();
+      };
+      const wd = setTimeout(() => {
+        if (!started) {
+          showWarn('O navegador não liberou o áudio da voz. Toque em "Repetir" ou "Testar voz". Verifique também o volume de mídia e se o celular está no silencioso.');
+          try { synth.cancel(); } catch (e) {}
+          done();
+        }
+      }, 3500);
+      setTimeout(() => { try { synth.speak(u); } catch (e) { done(); } }, 60);
+    });
+  }
+  async function say(text, voice = true, action = null) {
+    addMessage(text, 'jarvis', { action });
+    if (voice) await speak(text); else lastReply = text;
+    afterSpeak();
+  }
+  function afterSpeak() { if (convMode && !isListening && !busy) startListening(); }
+
+  /* ---------- bipe ---------- */
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [0, .35, .7].forEach(t => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = 880; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(.2, ctx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(.001, ctx.currentTime + t + .25);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + .27);
+      });
+    } catch (e) {}
+  }
+
+  /* ---------- timers ---------- */
+  const fmt = s => { const m = Math.floor(s / 60), r = s % 60; return (m ? m + 'min ' : '') + r + 's'; };
+  function renderTimers() {
+    timersEl.textContent = timers.length
+      ? '⏳ ' + timers.map(t => t.label + ': ' + fmt(Math.max(0, Math.ceil((t.end - Date.now()) / 1000)))).join('  •  ')
+      : '';
+  }
+  setInterval(() => {
+    for (let i = timers.length - 1; i >= 0; i--) {
+      if (Date.now() >= timers[i].end) { const t = timers.splice(i, 1)[0]; beep(); say('Tempo esgotado: ' + t.label + '.'); }
+    }
+    renderTimers();
+  }, 500);
+
+  /* ---------- abrir apps ---------- */
+  const norm = s => s.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const playUrl = pkg => 'https://play.google.com/store/apps/details?id=' + pkg;
+
+  // names: como você pode falar | pkg: pacote Android | ios: esquema iOS | web: site | uri: link direto | intent: intent Android pronto
+  const APPS = [
+    { n: ['whatsapp', 'zap', 'zapzap'], label: 'WhatsApp', pkg: 'com.whatsapp', ios: 'whatsapp://', web: 'https://web.whatsapp.com/' },
+    { n: ['instagram', 'insta'], label: 'Instagram', pkg: 'com.instagram.android', ios: 'instagram://', web: 'https://www.instagram.com/' },
+    { n: ['youtube', 'iutube'], label: 'YouTube', pkg: 'com.google.android.youtube', ios: 'youtube://', web: 'https://www.youtube.com/' },
+    { n: ['tiktok', 'tik tok'], label: 'TikTok', pkg: 'com.zhiliaoapp.musically', ios: 'snssdk1233://', web: 'https://www.tiktok.com/' },
+    { n: ['kwai'], label: 'Kwai', pkg: 'com.kwai.video', web: 'https://www.kwai.com/' },
+    { n: ['facebook', 'face'], label: 'Facebook', pkg: 'com.facebook.katana', ios: 'fb://', web: 'https://www.facebook.com/' },
+    { n: ['messenger'], label: 'Messenger', pkg: 'com.facebook.orca', ios: 'fb-messenger://', web: 'https://www.messenger.com/' },
+    { n: ['telegram'], label: 'Telegram', pkg: 'org.telegram.messenger', ios: 'tg://', web: 'https://web.telegram.org/' },
+    { n: ['discord'], label: 'Discord', pkg: 'com.discord', ios: 'discord://', web: 'https://discord.com/app' },
+    { n: ['twitter', 'x'], label: 'X (Twitter)', pkg: 'com.twitter.android', ios: 'twitter://', web: 'https://x.com/' },
+    { n: ['snapchat', 'snap'], label: 'Snapchat', pkg: 'com.snapchat.android', ios: 'snapchat://', web: 'https://www.snapchat.com/' },
+    { n: ['pinterest'], label: 'Pinterest', pkg: 'com.pinterest', ios: 'pinterest://', web: 'https://www.pinterest.com/' },
+    { n: ['twitch'], label: 'Twitch', pkg: 'tv.twitch.android.app', ios: 'twitch://', web: 'https://www.twitch.tv/' },
+    { n: ['spotify'], label: 'Spotify', pkg: 'com.spotify.music', ios: 'spotify://', web: 'https://open.spotify.com/' },
+    { n: ['netflix'], label: 'Netflix', pkg: 'com.netflix.mediaclient', ios: 'nflx://', web: 'https://www.netflix.com/' },
+    { n: ['prime video', 'amazon prime'], label: 'Prime Video', pkg: 'com.amazon.avod.thirdpartyclient', web: 'https://www.primevideo.com/' },
+    { n: ['disney'], label: 'Disney+', pkg: 'com.disney.disneyplus', web: 'https://www.disneyplus.com/' },
+    { n: ['gmail', 'email', 'e-mail'], label: 'Gmail', pkg: 'com.google.android.gm', ios: 'googlegmail://', web: 'https://mail.google.com/' },
+    { n: ['maps', 'mapa', 'google maps'], label: 'Google Maps', pkg: 'com.google.android.apps.maps', ios: 'comgooglemaps://', web: 'https://maps.google.com/' },
+    { n: ['waze'], label: 'Waze', pkg: 'com.waze', ios: 'waze://', web: 'https://www.waze.com/' },
+    { n: ['chrome'], label: 'Chrome', pkg: 'com.android.chrome', ios: 'googlechrome://', web: 'https://www.google.com/' },
+    { n: ['google', 'navegador'], label: 'Google', web: 'https://www.google.com/' },
+    { n: ['fotos', 'galeria', 'google fotos'], label: 'Google Fotos', pkg: 'com.google.android.apps.photos', web: 'https://photos.google.com/' },
+    { n: ['drive', 'google drive'], label: 'Google Drive', pkg: 'com.google.android.apps.docs', ios: 'googledrive://', web: 'https://drive.google.com/' },
+    { n: ['meet', 'google meet'], label: 'Google Meet', pkg: 'com.google.android.apps.meetings', web: 'https://meet.google.com/' },
+    { n: ['play store', 'loja de aplicativos', 'loja de apps'], label: 'Play Store', pkg: 'com.android.vending', web: 'https://play.google.com/store' },
+    { n: ['camera'], label: 'Câmera', intent: 'intent:#Intent;action=android.media.action.IMAGE_CAPTURE;end' },
+    { n: ['configuracoes', 'ajustes', 'configuracao'], label: 'Configurações', intent: 'intent:#Intent;action=android.settings.SETTINGS;end', ios: 'App-prefs:' },
+    { n: ['calculadora'], label: 'Calculadora', pkg: 'com.google.android.calculator', intentAlt: 'com.android.calculator2' },
+    { n: ['relogio', 'despertador'], label: 'Relógio', pkg: 'com.google.android.deskclock' },
+    { n: ['telefone', 'ligacoes'], label: 'Telefone', uri: 'tel:' },
+    { n: ['mensagens', 'sms'], label: 'Mensagens', uri: 'sms:' },
+    { n: ['free fire', 'freefire'], label: 'Free Fire', pkg: 'com.dts.freefireth' },
+    { n: ['free fire max'], label: 'Free Fire MAX', pkg: 'com.dts.freefiremax' },
+    { n: ['roblox'], label: 'Roblox', pkg: 'com.roblox.client', ios: 'roblox://' },
+    { n: ['minecraft'], label: 'Minecraft', pkg: 'com.mojang.minecraftpe' },
+    { n: ['brawl stars'], label: 'Brawl Stars', pkg: 'com.supercell.brawlstars' },
+    { n: ['clash royale'], label: 'Clash Royale', pkg: 'com.supercell.clashroyale' },
+    { n: ['clash of clans'], label: 'Clash of Clans', pkg: 'com.supercell.clashofclans' },
+    { n: ['nubank', 'nu bank'], label: 'Nubank', pkg: 'com.nu.production' },
+    { n: ['mercado pago'], label: 'Mercado Pago', pkg: 'com.mercadopago.wallet' },
+    { n: ['picpay', 'pic pay'], label: 'PicPay', pkg: 'com.picpay' },
+    { n: ['ifood', 'i food'], label: 'iFood', pkg: 'br.com.brainweb.ifood' },
+    { n: ['uber'], label: 'Uber', pkg: 'com.ubercab', ios: 'uber://' },
+    { n: ['99', 'noventa e nove'], label: '99', pkg: 'com.taxis99' },
+    { n: ['shopee'], label: 'Shopee', pkg: 'com.shopee.br' },
+    { n: ['mercado livre'], label: 'Mercado Livre', pkg: 'com.mercadolibre' },
+    { n: ['amazon'], label: 'Amazon', pkg: 'com.amazon.mShop.android.shopping', web: 'https://www.amazon.com.br/' },
+    { n: ['github'], label: 'GitHub', pkg: 'com.github.android', web: 'https://github.com/' },
+    { n: ['wikipedia'], label: 'Wikipédia', web: 'https://pt.wikipedia.org/' }
+  ];
+
+  function androidIntent(pkg, fallback) {
+    return 'intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=' + pkg +
+      ';S.browser_fallback_url=' + encodeURIComponent(fallback || playUrl(pkg)) + ';end';
+  }
+  function linkFor(app) {
+    if (app.uri) return app.uri;
+    if (isAndroid) {
+      if (app.intent) return app.intent;
+      if (app.pkg) return androidIntent(app.pkg, app.web && !app.pkg ? app.web : playUrl(app.pkg));
+      return app.web || 'https://www.google.com/search?q=' + encodeURIComponent(app.label);
+    }
+    if (isIOS && app.ios) return app.ios;
+    return app.web || 'https://www.google.com/search?q=' + encodeURIComponent(app.label + ' app');
+  }
+  function linkForCustom(c) {
+    const t = c.target.trim();
+    if (/^[a-z][a-z0-9+.-]*:/i.test(t)) return t;               // já é um link/esquema
+    if (/^[a-z0-9_]+(\.[a-z0-9_]+)+$/i.test(t)) return isAndroid ? androidIntent(t) : playUrl(t); // pacote
+    return 'https://www.google.com/search?q=' + encodeURIComponent(t);
+  }
+  function go(url) {
+    try {
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { try { location.href = url; } catch (e2) {} }
+  }
+
+  function findApp(phrase) {
+    const p = norm(phrase).replace(/[.!?]+$/, '').replace(/^(o |a |os |as |no |na |app |aplicativo |site |do |da )+/, '').trim();
+    const match = names => names.some(n => { n = norm(n); return p === n || (n.length > 2 && (' ' + p + ' ').includes(' ' + n + ' ')); });
+    const c = customApps.find(a => match([a.name]));
+    if (c) return { label: c.name, url: linkForCustom(c), known: true };
+    const sorted = APPS.slice().sort((a, b) => Math.max(...b.n.map(x => x.length)) - Math.max(...a.n.map(x => x.length)));
+    const a = sorted.find(x => match(x.n));
+    if (a) return { label: a.label, url: linkFor(a), known: true };
+    return { label: phrase.trim(), url: 'https://play.google.com/store/search?q=' + encodeURIComponent(phrase.trim()) + '&c=apps', known: false };
+  }
+
+  function openApp(phrase) {
+    const r = findApp(phrase);
+    if (r.known) {
+      say('Abrindo ' + r.label + '. Se não abrir sozinho, toque no botão.', true, { label: '▶ Abrir ' + r.label, url: r.url });
+      go(r.url);
+    } else {
+      say('Não conheço o app ' + r.label + '. Posso procurar na Play Store, ou você me ensina no campo "Ensinar um app".', true, { label: '🔎 Procurar na Play Store', url: r.url });
+    }
+  }
+
+  function listApps() {
+    const names = APPS.map(a => a.label).concat(customApps.map(c => c.name));
+    say('Eu abro: ' + names.join(', ') + '. E você pode me ensinar outros no campo "Ensinar um app".', false);
+  }
+
+  /* ---------- apps ensinados ---------- */
+  function renderCustom() {
+    const box = $('customList'); box.textContent = '';
+    customApps.forEach((c, i) => {
+      const b = document.createElement('button'); b.className = 'chip custom'; b.textContent = c.name + ' ✕';
+      b.title = 'Remover'; b.addEventListener('click', () => { customApps.splice(i, 1); store.set('jarvis_apps', JSON.stringify(customApps)); renderCustom(); });
+      box.appendChild(b);
+    });
+  }
+  $('addForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('addName').value.trim(), target = $('addTarget').value.trim();
+    if (!name || !target) return;
+    customApps = customApps.filter(c => norm(c.name) !== norm(name));
+    customApps.push({ name, target }); store.set('jarvis_apps', JSON.stringify(customApps));
+    $('addName').value = ''; $('addTarget').value = ''; renderCustom();
+    say('Aprendi o app ' + name + '. Diga "abrir ' + name + '".');
+  });
+
+  /* ---------- ações locais ---------- */
+  function tryCalc(q) {
+    let e = q.replace(/^(quanto e|quanto vale|calcule|calcular|conta de|resultado de)\s+/, '')
+             .replace(/\bmais\b/g, '+').replace(/\bmenos\b/g, '-').replace(/\b(vezes|multiplicado por|x)\b/g, '*')
+             .replace(/\b(dividido por|dividido|sobre)\b/g, '/').replace(/,/g, '.').replace(/[?=]/g, '').trim();
+    if (!/^[\d\s+\-*/().]+$/.test(e) || !/\d/.test(e) || !/[+\-*/]/.test(e)) return null;
+    try {
+      const r = Function('"use strict";return (' + e + ')')();
+      if (typeof r !== 'number' || !isFinite(r)) return 'Não consigo calcular isso.';
+      return 'O resultado é ' + String(Math.round(r * 1e6) / 1e6).replace('.', ',') + '.';
+    } catch (err) { return null; }
+  }
+  function tryTimer(q) {
+    const m = q.match(/(timer|temporizador|cronometro|alarme|me avise|me lembre).*?(\d+)\s*(segundo|seg|minuto|min|hora|h)/);
+    if (!m) return null;
+    const n = parseInt(m[2], 10), u = m[3];
+    const secs = /^(h|hora)/.test(u) ? n * 3600 : /^min/.test(u) ? n * 60 : n;
+    if (secs < 1 || secs > 86400) return 'Escolha um tempo entre 1 segundo e 24 horas.';
+    const label = fmt(secs);
+    timers.push({ label, end: Date.now() + secs * 1000 }); renderTimers();
+    return 'Timer de ' + label + ' iniciado. Deixe esta página aberta até acabar.';
+  }
+
+  const OPEN_RE = /^(?:abra|abrir|abre|inicie|iniciar|execute|executar|liga|ligue|va para|ir para|me leve para|abre o|abre a)\s+(.+)$/;
+
+  function handleLocal(original, q) {
+    let m;
+    if ((m = q.match(/(?:meu nome e|me chamo|pode me chamar de)\s+/))) {
+      const raw = original.match(/(?:meu nome é|meu nome e|me chamo|pode me chamar de)\s+(.{1,30})/i);
+      if (raw) {
+        userName = raw[1].replace(/[.!?]+$/, '').trim(); store.set('jarvis_name', userName);
+        say('Prazer, ' + userName + '! Vou lembrar do seu nome.'); return true;
+      }
+    }
+    if (q.includes('qual e o meu nome') || q.includes('sabe meu nome')) {
+      say(userName ? 'Seu nome é ' + userName + '.' : 'Ainda não sei. Diga "meu nome é" e o seu nome.'); return true;
+    }
+    if (/^(oi|ola|e ai|opa|bom dia|boa tarde|boa noite)\b/.test(q) && q.split(' ').length <= 4) {
+      say('Olá' + (userName ? ', ' + userName : '') + '! Estou pronto para ajudar.'); return true;
+    }
+    if ((m = OPEN_RE.exec(q))) { openApp(m[1]); return true; }
+    if (q.includes('quais apps') || q.includes('quais aplicativos') || q.includes('lista de apps')) { listApps(); return true; }
+    if ((m = tryTimer(q))) { say(m); return true; }
+    if (/(cancel|para|apague|zere).*(timer|temporizador)/.test(q)) { timers.length = 0; renderTimers(); say('Timers cancelados.'); return true; }
+    if (q.includes('que horas') || q === 'hora' || q.includes('horas sao')) {
+      say('Agora são ' + new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(new Date()) + '.'); return true;
+    }
+    if (q.includes('que dia') || q.includes('data de hoje') || q === 'data') {
+      say('Hoje é ' + new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()) + '.'); return true;
+    }
+    if ((m = tryCalc(q))) { say(m); return true; }
+    if ((m = original.match(/^(?:pesquisar|pesquise|pesquisa|procure|busque)\s+(?:por\s+|sobre\s+)?(.+)$/i))) {
+      const term = m[1].trim(), url = 'https://www.google.com/search?q=' + encodeURIComponent(term);
+      say('Pesquisando ' + term + ' no Google.', true, { label: '▶ Abrir pesquisa', url }); go(url); return true;
+    }
+    if (q.includes('pare de falar') || q === 'silencio' || q === 'calar') { if (synth) synth.cancel(); say('Certo. Fico em silêncio.', false); return true; }
+    if (q.includes('limpar conversa') || q.includes('apagar conversa')) { clearChat(); return true; }
+    if (q === 'ajuda' || q.includes('o que voce faz') || q.includes('comandos')) {
+      say('Respondo perguntas com IA, abro apps como WhatsApp, Instagram e YouTube, faço timers e contas, digo a hora e pesquiso no Google. Diga "quais apps você abre" para ver a lista, ou me ensine um app novo.', true); return true;
+    }
+    if (q.includes('quem e voce') || q.includes('seu nome')) { say('Sou o JARVIS AI, seu assistente de voz pessoal.'); return true; }
+    return false;
+  }
+
+  /* ---------- IA ---------- */
+  async function getSample() {
+    if (sampleFn !== undefined) return sampleFn;
+    try { sampleFn = (window.claude && await window.claude.use('sample')) || null; } catch (e) { sampleFn = null; }
+    return sampleFn;
+  }
+  function buildPrompt(question) {
+    const recent = history.filter(h => h.text).slice(-12, -1).map(h => (h.who === 'you' ? 'Usuário: ' : 'Jarvis: ') + h.text).join('\n');
+    const now = new Date().toLocaleString('pt-BR', { dateStyle: 'full', timeStyle: 'short' });
+    return 'Você é o JARVIS, um assistente de voz pessoal em português do Brasil. ' +
+      'Responda de forma natural, simpática e MUITO curta (no máximo 3 frases), pois sua resposta será falada em voz alta. ' +
+      'Não use markdown, listas, emojis nem símbolos. Se não souber algo, diga com honestidade. ' +
+      'Você não tem acesso a clima, notícias ou internet em tempo real. Você pode abrir apps e fazer timers quando o usuário pedir diretamente.\n' +
+      'Agora é: ' + now + '.\n' + (userName ? 'Nome do usuário: ' + userName + '.\n' : '') +
+      (recent ? '\nConversa recente:\n' + recent + '\n' : '') + '\nUsuário: ' + question + '\nJarvis:';
+  }
+  async function askAI(question) {
+    busy = true; setState('PENSANDO…', 'busy');
+    const bubble = addMessage('…', 'jarvis', { pending: true, skipHistory: true });
+    let finalText = '';
+    try {
+      const sample = await getSample();
+      if (!sample) throw { code: 'unavailable' };
+      const res = await sample(buildPrompt(question), {
+        cache: false, modelTier: 'quick',
+        onText: ({ text }) => { bubble.textContent = text; chat.scrollTop = chat.scrollHeight; }
+      });
+      finalText = (res && res.text || '').trim();
+      if (!finalText) throw { code: 'empty' };
+    } catch (err) {
+      const code = err && err.code;
+      finalText = code === 'not_granted' ? 'Preciso da sua permissão para usar a inteligência artificial. Tente de novo e aceite o pedido.'
+        : code === 'rate_limited' ? 'Muitas perguntas seguidas. Espere um instante e tente de novo.'
+        : code === 'unavailable' ? 'A IA só funciona abrindo esta página pelo link publicado no Claude. Os comandos locais continuam funcionando.'
+        : 'Não consegui pensar numa resposta agora. Tente de novo.';
+    }
+    bubble.classList.remove('pending'); bubble.textContent = finalText;
+    history.push({ who: 'jarvis', text: finalText }); saveHistory();
+    busy = false; idle();
+    await speak(finalText); afterSpeak();
+  }
+
+  /* ---------- entrada ---------- */
+  function handleCommand(raw) {
+    const original = raw.trim();
+    if (!original || busy) return;
+    transcript.textContent = original;
+    addMessage(original, 'you');
+    const stripped = original.replace(/^(ei |ok |oi |e aí |e ai )?jarvis[, ]*/i, '');
+    const q = norm(stripped);
+    if (!q) { say('Pois não?'); return; }
+    if (!handleLocal(stripped, q)) askAI(original);
+  }
+  function clearChat() {
+    history = []; saveHistory(); chat.textContent = '';
+    addMessage('Conversa limpa. Em que posso ajudar?', 'jarvis', { skipHistory: true });
+  }
+
+  /* ---------- reconhecimento de voz ---------- */
+  const ERR = {
+    'not-allowed': 'Microfone bloqueado. Permita o microfone para este site nas configurações do navegador. Dentro do app do Claude isso costuma ser bloqueado: abra o link no Chrome.',
+    'service-not-allowed': 'O serviço de voz está bloqueado neste navegador. Abra o link no Chrome.',
+    'network': 'O reconhecimento de voz precisa de internet. Verifique a conexão.',
+    'audio-capture': 'Não encontrei nenhum microfone funcionando.',
+    'language-not-supported': 'O idioma português não está disponível para reconhecimento neste aparelho.'
+  };
+  function startListening() {
+    if (!SR) { showWarn('Sem reconhecimento de voz neste navegador. Digite os comandos ou abra no Chrome.'); setState('MICROFONE INDISPONÍVEL', ''); return; }
+    unlockAudio();
+    if (isListening) { try { recognition.stop(); } catch (e) {} return; }
+    if (synth) { try { synth.cancel(); } catch (e) {} }
+    recognition = new SR();
+    recognition.lang = 'pt-BR'; recognition.interimResults = true; recognition.continuous = false; recognition.maxAlternatives = 1;
+    let gotFinal = false, gotAny = false;
+    recognition.onstart = () => {
+      isListening = true; setState('ESTOU ESCUTANDO', 'listening');
+      hint.textContent = 'Pode falar agora…'; micBtn.textContent = '⏹️ PARAR DE ESCUTAR';
+    };
+    recognition.onaudiostart = () => { gotAny = true; };
+    recognition.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) { gotFinal = true; transcript.textContent = t; handleCommand(t); }
+        else interim += t;
+      }
+      if (interim) transcript.textContent = interim;
+    };
+    recognition.onerror = e => {
+      const code = e.error;
+      if (code === 'not-allowed' || code === 'service-not-allowed') { convMode = false; syncConv(); }
+      if (ERR[code]) { showWarn(ERR[code]); hint.textContent = 'Erro: ' + code; }
+      else if (code === 'no-speech') hint.textContent = 'Não ouvi nada. Fale mais perto do microfone.';
+      else if (code !== 'aborted') { hint.textContent = 'Erro de voz: ' + code; }
+    };
+    recognition.onend = () => {
+      isListening = false; micBtn.textContent = '🎙️ FALAR COM JARVIS';
+      if (!busy && !(synth && synth.speaking)) idle();
+      if (!gotAny && !gotFinal) hint.textContent = 'O microfone não captou áudio. Use "Testar microfone".';
+      if (convMode && !gotFinal && !busy) setTimeout(() => { if (convMode && !isListening && !busy) startListening(); }, 500);
+    };
+    try { recognition.start(); } catch (e) { setState('TENTE NOVAMENTE', ''); }
+  }
+  function syncConv() { convBtn.textContent = '💬 MODO CONVERSA: ' + (convMode ? 'ON' : 'OFF'); convBtn.classList.toggle('on', convMode); }
+
+  /* ---------- testes ---------- */
+  $('testVoiceBtn').addEventListener('click', async () => {
+    unlockAudio();
+    if (!synth) { showWarn('Este navegador não tem síntese de voz. Os textos continuam aparecendo na tela.'); return; }
+    const n = synth.getVoices().length;
+    addMessage('Teste de voz: ' + n + ' voz(es) encontrada(s)' + (ptVoice ? ', usando ' + ptVoice.name : ', nenhuma em português') + '.', 'jarvis', { skipHistory: true });
+    await speak('Olá! Se você está me ouvindo, a voz está funcionando.');
+  });
+  $('testMicBtn').addEventListener('click', async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showWarn('Este navegador não deixa a página acessar o microfone (comum dentro de apps). Abra o link no Chrome.'); return;
+    }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach(t => t.stop());
+      addMessage('Microfone liberado ✅. Agora toque em "Falar com Jarvis".', 'jarvis', { skipHistory: true });
+    } catch (e) {
+      const n = e && e.name;
+      showWarn(n === 'NotAllowedError' ? 'Microfone negado. Libere o acesso nas permissões do site (cadeado ao lado do endereço) ou abra o link no Chrome.'
+        : n === 'NotFoundError' ? 'Nenhum microfone encontrado.' : 'Falha ao acessar o microfone: ' + (n || 'erro desconhecido'));
+    }
+  });
+
+  /* ---------- eventos ---------- */
+  micBtn.addEventListener('click', startListening);
+  convBtn.addEventListener('click', () => {
+    convMode = !convMode; syncConv();
+    if (convMode) startListening(); else if (isListening) { try { recognition.stop(); } catch (e) {} }
+  });
+  $('repeatBtn').addEventListener('click', () => { unlockAudio(); speak(lastReply).then(afterSpeak); });
+  $('stopBtn').addEventListener('click', () => {
+    convMode = false; syncConv();
+    if (synth) { try { synth.cancel(); } catch (e) {} }
+    if (isListening) { try { recognition.stop(); } catch (e) {} }
+    idle();
+  });
+  $('clearBtn').addEventListener('click', clearChat);
+  $('chatForm').addEventListener('submit', e => {
+    e.preventDefault(); unlockAudio();
+    const f = $('textInput'), v = f.value.trim();
+    if (!v) return; f.value = ''; handleCommand(v);
+  });
+  document.querySelectorAll('[data-command]').forEach(b => b.addEventListener('click', () => { unlockAudio(); handleCommand(b.dataset.command); }));
+
+  /* ---------- início ---------- */
+  renderCustom();
+  if (history.length) history.slice(-14).forEach(h => addMessage(h.text, h.who, { skipHistory: true }));
+  else addMessage('Olá! Sou o JARVIS. Toque no microfone ou escreva uma mensagem para começar.', 'jarvis', { skipHistory: true });
+})();
+</script>
+</body>
+</html>
